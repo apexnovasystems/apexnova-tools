@@ -1,0 +1,598 @@
+{% extends 'layout.html' %}
+
+{% block title %}QR Code Generator{% endblock %}
+
+{% block content %}
+
+<div class="min-h-screen py-10 px-4 transition-colors duration-200">
+    <div class="max-w-6xl mx-auto">
+
+        <!-- MAIN CARD -->
+        <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden transition-colors duration-200">
+
+            <!-- HEADER -->
+            <div class="bg-gradient-to-r from-purple-600 to-purple-500 px-8 py-6">
+                <div class="flex items-center gap-4">
+                    <div class="bg-white/15 p-3 rounded-2xl">
+                        <i class="fas fa-qrcode text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-semibold text-white">
+                            QR Code Generator
+                        </h2>
+                        <p class="text-purple-100 text-sm mt-1">
+                            Generate QR codes from text, URLs, or any data
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 md:p-10">
+
+                <!-- INPUT SECTION -->
+                <div class="mb-6">
+                    <label for="textInput" class="block text-sm font-medium text-gray-700 mb-2">
+                        Enter Text or URL
+                    </label>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <input type="text"
+                               id="textInput"
+                               placeholder="Enter text, URL, or any data..."
+                               class="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition outline-none"
+                               value="{{ qr_data or '' }}"
+                               autofocus>
+                        <button type="button"
+                                id="generateBtn"
+                                class="px-8 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium shadow-sm transition whitespace-nowrap">
+                            <i class="fas fa-qrcode mr-2"></i> Generate QR
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2">
+                        <i class="fas fa-info-circle"></i> Supports URLs, text, phone numbers, emails, and more
+                    </p>
+                </div>
+
+                <!-- QR CODE DISPLAY -->
+                <div id="qrContainer" {% if not qr_image %}style="display:none;"{% endif %} class="mt-6">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-semibold text-gray-700">Generated QR Code</h3>
+                        <div class="flex gap-2">
+                            <button onclick="downloadQR()" class="text-sm text-purple-600 hover:text-purple-700 flex items-center gap-1 border border-purple-200 px-3 py-1 rounded-lg hover:bg-purple-50 transition">
+                                <i class="fas fa-download"></i> Download
+                            </button>
+                            <button onclick="clearQR()" class="text-sm text-red-500 hover:text-red-700 flex items-center gap-1 border border-red-200 px-3 py-1 rounded-lg hover:bg-red-50 transition">
+                                <i class="fas fa-times"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col items-center">
+                        <div class="bg-white p-4 rounded-xl shadow-sm">
+                            <img id="qrImage" 
+                                 src="{% if qr_image %}data:image/png;base64,{{ qr_image }}{% endif %}" 
+                                 alt="QR Code" 
+                                 class="w-64 h-64 object-contain">
+                        </div>
+                        <div class="mt-4 w-full max-w-md">
+                            <p class="text-xs text-gray-500 text-center break-all">
+                                <span class="font-medium">Data:</span> <span id="qrData">{{ qr_data }}</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex flex-wrap gap-3 justify-center">
+                        <button onclick="downloadQR()" class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm">
+                            <i class="fas fa-download"></i> Download PNG
+                        </button>
+                        <button onclick="printQR()" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm">
+                            <i class="fas fa-print"></i> Print QR
+                        </button>
+                        <button onclick="copyQRData()" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm">
+                            <i class="fas fa-copy"></i> Copy Data
+                        </button>
+                        <button onclick="clearQR()" class="inline-flex items-center gap-2 px-4 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition text-sm">
+                            <i class="fas fa-trash"></i> Clear QR
+                        </button>
+                    </div>
+                </div>
+
+                <!-- MESSAGE -->
+                <div id="messageContainer" {% if not msg %}style="display:none;"{% endif %} class="mt-6 p-4 rounded-xl border text-sm 
+                    {% if msg and ('error' in msg.lower() or 'please' in msg.lower()) %}
+                        bg-red-50 border-red-200 text-red-800
+                    {% elif msg %}
+                        bg-purple-50 border-purple-200 text-purple-800
+                    {% endif %}
+                ">
+                    <div class="flex items-start gap-2">
+                        <i id="msgIcon" class="fas {% if msg and ('error' in msg.lower() or 'please' in msg.lower()) %}fa-exclamation-circle text-red-500{% elif msg %}fa-check-circle text-purple-500{% endif %} mt-0.5"></i>
+                        <span id="msgText">{{ msg }}</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- FEATURES SECTION -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-white rounded-2xl border border-gray-100 p-5 text-center hover:shadow-md transition">
+                <div class="w-12 h-12 mx-auto bg-purple-50 rounded-xl flex items-center justify-center mb-3">
+                    <i class="fas fa-link text-purple-600 text-xl"></i>
+                </div>
+                <h4 class="font-medium text-gray-800 mb-1">URLs & Links</h4>
+                <p class="text-sm text-gray-500">Generate QR codes for any website URL</p>
+            </div>
+            <div class="bg-white rounded-2xl border border-gray-100 p-5 text-center hover:shadow-md transition">
+                <div class="w-12 h-12 mx-auto bg-purple-50 rounded-xl flex items-center justify-center mb-3">
+                    <i class="fas fa-envelope text-purple-600 text-xl"></i>
+                </div>
+                <h4 class="font-medium text-gray-800 mb-1">Email & Phone</h4>
+                <p class="text-sm text-gray-500">Create QR codes for contact information</p>
+            </div>
+            <div class="bg-white rounded-2xl border border-gray-100 p-5 text-center hover:shadow-md transition">
+                <div class="w-12 h-12 mx-auto bg-purple-50 rounded-xl flex items-center justify-center mb-3">
+                    <i class="fas fa-wifi text-purple-600 text-xl"></i>
+                </div>
+                <h4 class="font-medium text-gray-800 mb-1">Wi-Fi Networks</h4>
+                <p class="text-sm text-gray-500">Generate QR codes for Wi-Fi access</p>
+            </div>
+            <div class="bg-white rounded-2xl border border-gray-100 p-5 text-center hover:shadow-md transition">
+                <div class="w-12 h-12 mx-auto bg-purple-50 rounded-xl flex items-center justify-center mb-3">
+                    <i class="fas fa-download text-purple-600 text-xl"></i>
+                </div>
+                <h4 class="font-medium text-gray-800 mb-1">Easy Download</h4>
+                <p class="text-sm text-gray-500">Download QR codes as high-quality PNG</p>
+            </div>
+        </div>
+
+        <!-- TIPS SECTION -->
+        <div class="mt-6 bg-blue-50 border border-blue-200 rounded-2xl p-4">
+            <div class="flex items-start gap-3">
+                <i class="fas fa-lightbulb text-blue-600 mt-1"></i>
+                <div>
+                    <h4 class="font-medium text-blue-800 text-sm">Tips for QR Codes:</h4>
+                    <ul class="text-xs text-blue-700 mt-1 space-y-1">
+                        <li>• Use short URLs for better scanning (e.g., bit.ly or tinyurl)</li>
+                        <li>• For Wi-Fi: Use format "WIFI:T:WPA;S:NetworkName;P:Password;;"</li>
+                        <li>• Test your QR code with different devices before printing</li>
+                        <li>• Ensure good contrast between the QR and background</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+
+<script>
+    // ============================================
+    // STATE MANAGEMENT
+    // ============================================
+    let isDirty = false;
+    let hasQR = {{ 'true' if qr_image else 'false' }};
+
+    // ============================================
+    // WARNING ON PAGE LEAVE
+    // ============================================
+
+    window.addEventListener('load', function () {
+
+        const navEntries = performance.getEntriesByType("navigation");
+
+        if (navEntries.length > 0 && navEntries[0].type === "reload") {
+
+            Swal.fire({
+                title: 'Clear Data?',
+                text: 'You refreshed the page. Clear all QR data?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes'
+            }).then((result) => {
+
+                if (result.isConfirmed) {
+                    clearQR();
+                }
+
+            });
+
+        }
+
+    });
+
+    // ============================================
+    // SWEETALERT2 HELPERS
+    // ============================================
+    
+    function showSuccess(message) {
+        Swal.fire({
+            icon: 'success',
+            title: 'Success! 🎉',
+            text: message,
+            timer: 3000,
+            showConfirmButton: true,
+            confirmButtonColor: '#7c3aed',
+            confirmButtonText: 'Great!'
+        });
+    }
+
+    function showError(message) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error! ❌',
+            text: message,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'OK'
+        });
+    }
+
+    function showConfirm(message, title = 'Are you sure?') {
+        return Swal.fire({
+            title: title,
+            text: message,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, clear it!',
+            cancelButtonText: 'Cancel'
+        });
+    }
+
+    function showLoading(message = 'Generating your QR code...') {
+        return Swal.fire({
+            title: 'Processing... ⏳',
+            text: message,
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+    }
+
+    function closeLoading() {
+        Swal.close();
+    }
+
+    // ============================================
+    // CORE FUNCTIONALITY
+    // ============================================
+    
+    const textInput = document.getElementById('textInput');
+    const generateBtn = document.getElementById('generateBtn');
+    const qrContainer = document.getElementById('qrContainer');
+    const qrImage = document.getElementById('qrImage');
+    const qrData = document.getElementById('qrData');
+    const messageContainer = document.getElementById('messageContainer');
+    const msgText = document.getElementById('msgText');
+    const msgIcon = document.getElementById('msgIcon');
+
+    // Generate QR via AJAX - NO PAGE RELOAD
+    function generateQR() {
+        const text = textInput.value.trim();
+        if (!text) {
+            showError('Please enter some text or URL to generate a QR code.');
+            return;
+        }
+        
+        // Disable button and show loading
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Generating...';
+        generateBtn.style.cursor = 'not-allowed';
+        
+        // Show SweetAlert loading
+        showLoading('Generating QR code for: ' + text.substring(0, 30) + (text.length > 30 ? '...' : ''));
+        
+        fetch('{{ url_for("qr.api_generate") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ text: text })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Close loading
+            closeLoading();
+            
+            if (data.success) {
+                // Show QR code
+                qrImage.src = 'data:image/png;base64,' + data.image;
+                qrData.textContent = data.data;
+                qrContainer.style.display = 'block';
+                hasQR = true;
+                isDirty = true;
+                
+                // Show success message in UI
+                showMessage(data.message, 'success');
+                
+                // Show success SweetAlert
+                showSuccess('QR Code generated successfully! ✅');
+                
+                // Scroll to QR
+                setTimeout(() => {
+                    qrContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 300);
+            } else {
+                showError(data.error || 'Failed to generate QR code');
+            }
+        })
+        .catch(error => {
+            closeLoading();
+            showError('Network error. Please try again.');
+            console.error('Error:', error);
+        })
+        .finally(() => {
+            // Enable button
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = '<i class="fas fa-qrcode mr-2"></i> Generate QR';
+            generateBtn.style.cursor = 'pointer';
+        });
+    }
+
+    // Show message in UI
+    function showMessage(message, type) {
+        msgText.textContent = message;
+        messageContainer.style.display = 'block';
+        
+        if (type === 'success') {
+            messageContainer.className = 'mt-6 p-4 rounded-xl border text-sm bg-purple-50 border-purple-200 text-purple-800';
+            msgIcon.className = 'fas fa-check-circle text-purple-500 mt-0.5';
+        } else {
+            messageContainer.className = 'mt-6 p-4 rounded-xl border text-sm bg-red-50 border-red-200 text-red-800';
+            msgIcon.className = 'fas fa-exclamation-circle text-red-500 mt-0.5';
+        }
+        
+        // Auto dismiss after 8 seconds
+        setTimeout(() => {
+            messageContainer.style.transition = 'opacity 0.5s';
+            messageContainer.style.opacity = '0';
+            setTimeout(() => {
+                messageContainer.style.display = 'none';
+                messageContainer.style.opacity = '1';
+            }, 500);
+        }, 8000);
+    }
+
+    // ============================================
+    // QR CODE ACTIONS - NO PAGE RELOADS
+    // ============================================
+    
+    function downloadQR() {
+        if (!hasQR || !qrImage.src) {
+            showError('No QR code to download');
+            return;
+        }
+        
+        // Show loading
+        showLoading('Preparing your QR code for download...');
+        
+        fetch('{{ url_for("qr.api_download") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            closeLoading();
+            
+            if (data.success) {
+                // Create a hidden link and click it
+                const link = document.createElement('a');
+                link.href = data.url;
+                link.download = 'qr_code.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showSuccess('QR code downloaded successfully! 📥');
+            } else {
+                showError(data.error || 'Failed to download QR code');
+            }
+        })
+        .catch(error => {
+            closeLoading();
+            showError('Network error. Please try again.');
+            console.error('Error:', error);
+        });
+    }
+
+    function printQR() {
+        if (!hasQR || !qrImage.src) {
+            showError('No QR code to print');
+            return;
+        }
+        
+        const win = window.open('');
+        win.document.write(`
+            <html>
+                <head>
+                    <title>Print QR Code</title>
+                    <style>
+                        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+                        img { max-width: 80%; max-height: 80%; }
+                        @media print {
+                            body { height: 100vh; }
+                            img { max-width: 100%; max-height: 100%; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <img src="${qrImage.src}" alt="QR Code">
+                    <script>
+                        window.onload = function() { window.print(); }
+                    <\/script>
+                </body>
+            </html>
+        `);
+        win.document.close();
+    }
+
+    function copyQRData() {
+        const data = qrData.textContent;
+        if (data && data !== '' && data !== 'None') {
+            navigator.clipboard.writeText(data).then(() => {
+                showSuccess('QR data copied to clipboard! 📋');
+            }).catch(() => {
+                // Fallback
+                const textarea = document.createElement('textarea');
+                textarea.value = data;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showSuccess('QR data copied to clipboard! 📋');
+            });
+        } else {
+            showError('No data to copy');
+        }
+    }
+
+    function clearQR() {
+        if (!hasQR) {
+            showError('No QR code to clear');
+            return;
+        }
+        
+        showConfirm('This will remove the generated QR code from the display.', 'Clear QR Code?')
+            .then((result) => {
+                if (result.isConfirmed) {
+                    // Show loading
+                    showLoading('Clearing QR code...');
+                    
+                    fetch('{{ url_for("qr.api_clear") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        closeLoading();
+                        
+                        if (data.status === 'success') {
+                            // Hide QR
+                            qrContainer.style.display = 'none';
+                            qrImage.src = '';
+                            qrData.textContent = '';
+                            hasQR = false;
+                            isDirty = false;
+                            
+                            showSuccess('QR code cleared successfully! 🗑️');
+                        }
+                    })
+                    .catch(error => {
+                        closeLoading();
+                        showError('Failed to clear QR code');
+                        console.error('Error:', error);
+                    });
+                }
+            });
+    }
+
+    // ============================================
+    // EVENT LISTENERS
+    // ============================================
+    
+    // Generate on button click
+    generateBtn.addEventListener('click', generateQR);
+
+    // Generate on Enter key
+    textInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            generateQR();
+        }
+    });
+
+    // Mark dirty on text input
+    textInput.addEventListener('input', function() {
+        if (this.value.trim()) {
+            isDirty = true;
+        }
+    });
+
+    // ============================================
+    // AUTO-DISMISS MESSAGES ON LOAD
+    // ============================================
+    document.addEventListener('DOMContentLoaded', function() {
+        // If there's a message on load, auto-dismiss it
+        if (messageContainer.style.display !== 'none') {
+            setTimeout(() => {
+                messageContainer.style.transition = 'opacity 0.5s';
+                messageContainer.style.opacity = '0';
+                setTimeout(() => {
+                    messageContainer.style.display = 'none';
+                    messageContainer.style.opacity = '1';
+                }, 500);
+            }, 8000);
+        }
+        
+        // Focus input if empty
+        if (!textInput.value) {
+            textInput.focus();
+        }
+        
+        // Mark dirty if there's QR
+        if (hasQR) {
+            isDirty = true;
+        }
+    });
+
+    // ============================================
+    // KEYBOARD SHORTCUTS
+    // ============================================
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+Enter to generate
+        if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault();
+            generateQR();
+        }
+        // Escape to clear
+        if (e.key === 'Escape' && hasQR) {
+            e.preventDefault();
+            clearQR();
+        }
+        // Ctrl+D to download
+        if (e.ctrlKey && e.key === 'd' && hasQR) {
+            e.preventDefault();
+            downloadQR();
+        }
+    });
+
+    // ============================================
+    // LOG SHORTCUTS
+    // ============================================
+    console.log('⌨️ Keyboard shortcuts:');
+    console.log('  Ctrl+Enter - Generate QR code');
+    console.log('  Ctrl+D - Download QR code');
+    console.log('  Escape - Clear QR code');
+</script>
+
+<style>
+    #qrContainer img {
+        transition: transform 0.3s ease;
+    }
+    #qrContainer img:hover {
+        transform: scale(1.02);
+    }
+    .transition {
+        transition: all 0.3s ease;
+    }
+    .swal2-popup {
+        border-radius: 20px !important;
+    }
+    .swal2-confirm {
+        border-radius: 12px !important;
+    }
+    input:focus {
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    }
+    /* Loading button animation */
+    .btn-loading {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+</style>
+
+{% endblock %}

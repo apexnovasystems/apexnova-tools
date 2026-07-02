@@ -1,0 +1,305 @@
+{% extends 'layout.html' %}
+
+{% block title %}Image to PDF Converter{% endblock %}
+
+{% block content %}
+
+<div class="min-h-screen py-10 px-4 transition-colors duration-200">
+    <div class="max-w-6xl mx-auto">
+
+        <!-- MAIN CARD -->
+        <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden transition-colors duration-200">
+
+            <!-- HEADER -->
+            <div class="bg-gradient-to-r from-indigo-600 to-indigo-500 px-8 py-6">
+                <div class="flex items-center gap-4">
+                    <div class="bg-white/15 p-3 rounded-2xl">
+                        <i class="fas fa-images text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-semibold text-white">
+                            Image to PDF Converter
+                        </h2>
+                        <p class="text-indigo-100 text-sm mt-1">
+                            Combine multiple images into one PDF document
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 md:p-10">
+
+                <form method="post" enctype="multipart/form-data" id="uploadForm">
+                    <!-- DROPZONE -->
+                    <div id="dropzone"
+                         class="relative border-2 border-dashed border-gray-300 rounded-2xl p-10 text-center bg-white hover:bg-gray-50 transition cursor-pointer">
+
+                        <input type="file"
+                               name="images"
+                               id="fileInput"
+                               accept="image/jpeg,image/png,image/jpg,image/webp"
+                               multiple
+                               class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+
+                        <div class="pointer-events-none relative z-0">
+                            <div class="w-14 h-14 mx-auto bg-indigo-50 rounded-2xl flex items-center justify-center mb-4">
+                                <i class="fas fa-cloud-upload-alt text-indigo-600 text-2xl"></i>
+                            </div>
+                            <p class="text-gray-800 font-medium">Drag & drop images here</p>
+                            <p class="text-sm text-gray-500">or click to select (multiple allowed)</p>
+                            <p class="text-xs text-gray-400 mt-2">JPG, PNG, WEBP – Max 10MB each</p>
+                        </div>
+                    </div>
+
+                    <!-- IMAGE PREVIEW + SORTABLE GRID -->
+                    <div id="previewContainer" class="hidden mt-6">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-semibold text-gray-700">Selected Images <span id="imageCount">(0)</span></h3>
+                            <button type="button" id="clearAllBtn" class="text-sm text-red-500 hover:text-red-700">Clear all</button>
+                        </div>
+                        <div id="sortableGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                            <!-- dynamic thumbnails appear here -->
+                        </div>
+                        <p class="text-xs text-gray-400 mt-2 flex items-center gap-1">
+                            <i class="fas fa-arrows-alt"></i> Drag images to reorder (page order)
+                        </p>
+                    </div>
+
+                    <!-- OPTIONS -->
+                    <div class="bg-gray-50 border border-gray-100 rounded-2xl p-4 flex flex-wrap gap-4 justify-between mt-6">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-600">PDF Quality</span>
+                            <select name="quality" id="qualitySelect" class="text-sm border border-gray-200 rounded-lg px-3 py-1 bg-white">
+                                <option value="high">High (best print)</option>
+                                <option value="medium" selected>Medium (balanced)</option>
+                                <option value="low">Low (small file)</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-600">Page Size</span>
+                            <select name="page_size" id="pageSizeSelect" class="text-sm border border-gray-200 rounded-lg px-3 py-1 bg-white">
+                                <option value="auto">Auto (fit to image)</option>
+                                <option value="a4">A4</option>
+                                <option value="letter">Letter</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- SUBMIT BUTTON -->
+                    <div class="text-center mt-8">
+                        <button type="submit"
+                                id="convertBtn"
+                                class="px-10 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed">
+                            Convert to PDF
+                        </button>
+                    </div>
+                </form>
+
+                <!-- MESSAGE / RESULT -->
+                {% if msg %}
+                <div class="mt-6 p-4 rounded-xl border text-sm bg-green-50 border-green-200 text-green-800">
+                    {{ msg }}
+                </div>
+                {% endif %}
+
+               
+                <!-- ✅ Dynamic Success Message -->
+                <div id="resultMessage" class="mt-6 p-4 rounded-xl border text-sm bg-green-50 border-green-200 text-green-800 hidden">
+                    <i class="fas fa-check-circle mr-2"></i> PDF created successfully!
+                </div>
+
+                <!-- ✅ Dynamic Download Button Container -->
+                <div id="downloadContainer" class="mt-6 text-center hidden">
+                    <a id="downloadBtn" href="#" download="converted.pdf" class="inline-flex items-center gap-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition shadow-md">
+                        <i class="fas fa-download"></i> Download PDF
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SortableJS for drag reorder -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<script>
+    const fileInput = document.getElementById('fileInput');
+    const dropzone = document.getElementById('dropzone');
+    const previewContainer = document.getElementById('previewContainer');
+    const sortableGrid = document.getElementById('sortableGrid');
+    const imageCountSpan = document.getElementById('imageCount');
+    const clearAllBtn = document.getElementById('clearAllBtn');
+    const convertBtn = document.getElementById('convertBtn');
+
+
+    
+    
+    let currentFiles = [];   // store File objects in order
+    let currentBlobUrl = null; // ✅ Track the converted PDF blob
+
+    // ✅ Function to delete the converted PDF from browser memory
+    function cleanupConvertedPdf() {
+        if (currentBlobUrl) {
+            window.URL.revokeObjectURL(currentBlobUrl);
+            currentBlobUrl = null;
+        }
+        // Hide the success message and download button
+        const downloadContainer = document.getElementById('downloadContainer');
+        const resultMessage = document.getElementById('resultMessage');
+        if (downloadContainer) downloadContainer.classList.add('hidden');
+        if (resultMessage) resultMessage.classList.add('hidden');
+    }
+
+    function formatSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+    function renderThumbnails() {
+        sortableGrid.innerHTML = '';
+        currentFiles.forEach((file, idx) => {
+            const url = URL.createObjectURL(file);
+            const card = document.createElement('div');
+            card.className = 'bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm transition hover:shadow-md';
+            card.setAttribute('data-idx', idx);
+            card.innerHTML = `
+                <div class="relative">
+                    <img src="${url}" class="w-full h-32 object-cover">
+                    <button type="button" class="remove-img absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center hover:bg-red-600">×</button>
+                </div>
+                <div class="p-2 text-xs truncate">
+                    <span class="font-medium">${file.name.substring(0, 20)}</span>
+                    <span class="text-gray-400 text-xs block">${formatSize(file.size)}</span>
+                </div>
+            `;
+            sortableGrid.appendChild(card);
+            card.querySelector('.remove-img').addEventListener('click', (e) => {
+                e.stopPropagation();
+                currentFiles.splice(idx, 1);
+                renderThumbnails();
+                updateCount();
+                if (currentFiles.length === 0) previewContainer.classList.add('hidden');
+            });
+        });
+        if (currentFiles.length > 0) {
+            previewContainer.classList.remove('hidden');
+        } else {
+            previewContainer.classList.add('hidden');
+        }
+        updateCount();
+    }
+
+    function updateCount() {
+        imageCountSpan.textContent = `(${currentFiles.length})`;
+        convertBtn.disabled = (currentFiles.length === 0);
+    }
+
+    function handleFiles(files) {
+        const validFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+        if (validFiles.length === 0) return;
+        currentFiles.push(...validFiles);
+        renderThumbnails();
+    }
+
+    fileInput.addEventListener('change', (e) => {
+        handleFiles(e.target.files);
+        fileInput.value = '';
+    });
+
+    dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('border-indigo-400', 'bg-indigo-50');
+    });
+    dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('border-indigo-400', 'bg-indigo-50');
+    });
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('border-indigo-400', 'bg-indigo-50');
+        handleFiles(e.dataTransfer.files);
+    });
+
+    clearAllBtn.addEventListener('click', () => {
+        currentFiles = [];
+        renderThumbnails();
+        previewContainer.classList.add('hidden');
+    });
+
+    let sortable = new Sortable(sortableGrid, {
+        animation: 150,
+        onEnd: function() {
+            const newOrder = [];
+            document.querySelectorAll('#sortableGrid > div').forEach(card => {
+                const idx = parseInt(card.getAttribute('data-idx'));
+                if (!isNaN(idx)) newOrder.push(currentFiles[idx]);
+            });
+            if (newOrder.length === currentFiles.length) {
+                currentFiles = newOrder;
+                renderThumbnails();
+            }
+        }
+    });
+
+    const form = document.getElementById('uploadForm');
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (currentFiles.length === 0) return;
+        convertBtn.disabled = true;
+        convertBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Converting...';
+        
+        const formData = new FormData();
+        currentFiles.forEach(file => {
+            formData.append('images', file);
+        });
+        formData.append('quality', document.getElementById('qualitySelect').value);
+        formData.append('page_size', document.getElementById('pageSizeSelect').value);
+        
+        try {
+            const response = await fetch('/', {
+                method: 'POST',
+                body: formData
+            });
+            if (response.ok) {
+                const blob = await response.blob();
+                
+                // ✅ Delete the previous converted PDF if it exists
+                cleanupConvertedPdf(); 
+                
+                // Create the new blob URL and save it to our variable
+                currentBlobUrl = window.URL.createObjectURL(blob);
+                
+                // Show the success message
+                document.getElementById('resultMessage').classList.remove('hidden');
+
+                // Set up and show the download button
+                const downloadContainer = document.getElementById('downloadContainer');
+                const downloadBtn = document.getElementById('downloadBtn');
+                
+                downloadBtn.href = currentBlobUrl; 
+                downloadContainer.classList.remove('hidden'); 
+           
+                
+            } 
+            else {
+                alert('Conversion failed. Please try again.');
+            }
+        } catch (err) {
+            alert('Network error.');
+        } finally {
+            convertBtn.disabled = false;
+            convertBtn.innerHTML = 'Convert to PDF';
+        }
+    });
+    window.addEventListener('beforeunload', cleanupConvertedPdf);
+    updateCount();
+</script>
+
+<style>
+    .sortable-drag {
+        opacity: 0.5;
+        transform: rotate(2deg);
+    }
+</style>
+
+{% endblock %}

@@ -1,0 +1,15 @@
+services:
+  tools:
+    build: .
+    container_name: apexnova_tools
+    restart: unless-stopped
+
+    ports:
+<<<<<<< HEAD
+      - "5001:5000"
+=======
+      - "5001:5000"
+
+    volumes:
+      - ./:/var/www
+>>>>>>> f82fb62 (Update on 6-17-2026)

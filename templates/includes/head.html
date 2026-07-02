@@ -1,0 +1,47 @@
+<!-- head.html (full content) -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>PDF Tools Pro | {{ title }}</title>
+
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Font Awesome 6 -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+<!-- Custom theme CSS (overrides Tailwind for dark mode) -->
+<link rel="stylesheet" href="/static/css/theme.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- Theme initialization script (runs before any content) -->
+<script>
+    (function() {
+        const STORAGE_KEY = 'apexnova_theme';
+        function getStoredTheme() {
+            return localStorage.getItem(STORAGE_KEY);
+        }
+        function setStoredTheme(theme) {
+            localStorage.setItem(STORAGE_KEY, theme);
+        }
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark-mode');
+            } else {
+                document.documentElement.classList.remove('dark-mode');
+            }
+        }
+        // load saved or system preference
+        let saved = getStoredTheme();
+        if (!saved) {
+            saved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        applyTheme(saved);
+        // expose for later use (header toggle)
+        window.__theme = {
+            current: () => document.documentElement.classList.contains('dark-mode') ? 'dark' : 'light',
+            toggle: () => {
+                const newTheme = window.__theme.current() === 'dark' ? 'light' : 'dark';
+                applyTheme(newTheme);
+                setStoredTheme(newTheme);
+            }
+        };
+    })();
+</script>

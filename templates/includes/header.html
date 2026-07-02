@@ -1,0 +1,59 @@
+<header class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10 transition-colors duration-200">
+    <div class="px-6 py-3 flex items-center justify-between flex-wrap gap-3">
+        <!-- Logo + Company Name -->
+        <div class="flex items-center space-x-3">
+            <!-- Logo image container (replaces SVG) -->
+            <div class="bg-gradient-to-br from-indigo-600 to-indigo-700 w-10 h-10 rounded-xl flex items-center justify-center shadow-md overflow-hidden">
+                <img src="https://apexnovasystems.com/apexNovaLogo.svg" 
+                     alt="Apex Nova Logo" 
+                     class="w-7 h-7 object-contain">
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight">
+                    <span class="text-gray-800">Apex Nova</span>
+                    <span class="text-indigo-600">Systems</span>
+                </h1>
+                <p class="text-xs text-gray-500 hidden sm:block">Enterprise PDF Solutions</p>
+            </div>
+        </div>
+
+        <!-- Right side: tagline + theme toggle (unchanged) -->
+        <div class="flex items-center space-x-4">
+            <div class="hidden md:flex items-center space-x-2 text-sm text-gray-500">
+                <i class="fas fa-shield-alt text-indigo-400"></i>
+                <span>Secure Processing</span>
+            </div>
+            <div class="h-6 w-px bg-gray-200 hidden md:block"></div>
+            <div class="flex items-center space-x-1 text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full">
+                <i class="fas fa-bolt text-xs"></i>
+                <span class="text-xs font-medium">Powered by apexnovasystems</span>
+            </div>
+            <!-- Theme toggle button -->
+            <button id="themeToggleBtn" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-700 hover:bg-indigo-100 transition-colors" aria-label="Switch theme">
+                <i id="themeIcon" class="fas fa-moon"></i>
+            </button>
+        </div>
+    </div>
+</header>
+
+<script>
+    (function() {
+        const toggleBtn = document.getElementById('themeToggleBtn');
+        const themeIcon = document.getElementById('themeIcon');
+        function updateIcon() {
+            const isDark = document.documentElement.classList.contains('dark-mode');
+            themeIcon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+        }
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                if (window.__theme && window.__theme.toggle) {
+                    window.__theme.toggle();
+                    updateIcon();
+                }
+            });
+        }
+        updateIcon();
+        const observer = new MutationObserver(updateIcon);
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    })();
+</script>

@@ -1,0 +1,78 @@
+/* static/css/theme.css - DARK MODULE FOR TAILWIND UTILITIES */
+
+/* Default (light mode) – no changes, let Tailwind work normally */
+:root {
+    --color-bg-page: #f3f4f6;   /* gray-50 */
+    --color-bg-card: #ffffff;
+    --color-bg-header: #ffffff;
+    --color-text-primary: #1f2937;
+    --color-text-secondary: #4b5563;
+    --color-border: #e5e7eb;
+}
+
+/* Dark mode overrides – enforce with !important to beat Tailwind */
+.dark-mode {
+    --color-bg-page: #0f172a !important;   /* slate-900 */
+    --color-bg-card: #1e293b !important;   /* slate-800 */
+    --color-bg-header: #1e293b !important;
+    --color-text-primary: #f1f5f9 !important;
+    --color-text-secondary: #cbd5e1 !important;
+    --color-border: #334155 !important;
+}
+
+/* Apply variables to all relevant Tailwind classes */
+body,
+.bg-white, .bg-gray-50, .bg-gray-100, .bg-gray-200,
+.bg-gray-300, .bg-gray-400, .bg-gray-500 {
+    background-color: var(--color-bg-card) !important;
+}
+
+.bg-gray-900, .bg-gray-800 {
+    background-color: var(--color-bg-header) !important;
+}
+
+/* Specific for page background */
+body.bg-gray-50, .min-h-screen.bg-gray-50 {
+    background-color: var(--color-bg-page) !important;
+}
+
+/* Text colors */
+.text-gray-800, .text-gray-900, .text-gray-700, .text-gray-600,
+.text-gray-500, .text-gray-400 {
+    color: var(--color-text-primary) !important;
+}
+
+.text-gray-500, .text-gray-400, .text-gray-300 {
+    color: var(--color-text-secondary) !important;
+}
+
+/* Borders */
+.border-gray-100, .border-gray-200, .border-gray-300,
+.border-gray-400 {
+    border-color: var(--color-border) !important;
+}
+
+/* Form elements (select, input) */
+select, input, textarea {
+    background-color: var(--color-bg-card) !important;
+    color: var(--color-text-primary) !important;
+    border-color: var(--color-border) !important;
+}
+
+/* Indigo backgrounds for badges – adjust for dark */
+.bg-indigo-50 {
+    background-color: rgba(79, 70, 229, 0.2) !important;
+}
+.text-indigo-600 {
+    color: #818cf8 !important;
+}
+
+/* Hover states (optional, keep smooth) */
+.hover\:bg-gray-50:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Ensure gradients remain visible */
+.bg-gradient-to-r.from-indigo-600.to-indigo-500 {
+    background-image: linear-gradient(to right, #4f46e5, #6366f1) !important;
+}

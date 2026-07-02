@@ -1,0 +1,97 @@
+{% extends 'layout.html' %}
+
+{% block title %}PDF to Image Converter{% endblock %}
+
+{% block extra_head %}
+
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen py-10 px-4 transition-colors duration-200">
+    <div class="max-w-6xl mx-auto">
+
+        <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            <!-- Header unchanged -->
+            <div class="bg-gradient-to-r from-indigo-600 to-indigo-500 px-8 py-6">
+                <div class="flex items-center gap-4">
+                    <div class="bg-white/15 p-3 rounded-2xl">
+                        <i class="fas fa-file-pdf text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-semibold text-white">PDF to Image Converter</h2>
+                        <p class="text-indigo-100 text-sm mt-1">Convert PDF pages into images instantly</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 md:p-10">
+
+                <!-- Dropzone -->
+                <div id="dropzone"
+                     class="relative border-2 border-dashed border-gray-300 rounded-2xl p-10 text-center bg-white hover:bg-gray-50 transition cursor-pointer">
+                    <input type="file" name="file" id="fileInput" accept=".pdf"
+                           class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                    <div class="pointer-events-none">
+                        <div class="w-14 h-14 mx-auto bg-indigo-50 rounded-2xl flex items-center justify-center mb-4">
+                            <i class="fas fa-cloud-upload-alt text-indigo-600 text-2xl"></i>
+                        </div>
+                        <p class="text-gray-800 font-medium">Drag & drop your PDF</p>
+                        <p class="text-sm text-gray-500">or click to select file</p>
+                        <p class="text-xs text-gray-400 mt-2">Max size 16MB</p>
+                    </div>
+                </div>
+
+                <!-- File info -->
+                <div id="fileInfo" class="hidden bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 flex justify-between items-center mt-4">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-file-pdf text-indigo-500"></i>
+                        <div>
+                            <p id="fileName" class="text-sm font-medium text-gray-800"></p>
+                            <p id="fileSize" class="text-xs text-gray-500"></p>
+                        </div>
+                    </div>
+                    <button type="button" id="removeFile" class="text-gray-400 hover:text-red-500 text-lg">✕</button>
+                </div>
+
+                <!-- Options -->
+                <div class="bg-gray-50 border border-gray-100 rounded-2xl p-4 flex flex-wrap gap-4 justify-between mt-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-gray-600">Quality</span>
+                        <select id="qualitySelect" class="text-sm border border-gray-200 rounded-lg px-3 py-1 bg-white">
+                            <option value="high">High (300 DPI)</option>
+                            <option value="medium" selected>Medium (150 DPI)</option>
+                            <option value="low">Low (72 DPI)</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-gray-600">Format</span>
+                        <select id="formatSelect" class="text-sm border border-gray-200 rounded-lg px-3 py-1 bg-white">
+                            <option value="png" selected>PNG</option>
+                            <option value="jpeg">JPEG</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Convert button -->
+                <div class="text-center mt-8">
+                    <button type="button" id="convertBtn"
+                            class="px-10 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium shadow-sm transition">
+                        Convert Now
+                    </button>
+                </div>
+
+                <!-- Message area -->
+                <div id="messageArea"></div>
+
+                <!-- Gallery area -->
+                <div id="galleryArea"></div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/pdf_to_image.js"></script>
+{% endblock %}

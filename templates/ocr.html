@@ -1,0 +1,711 @@
+{% extends 'layout.html' %}
+
+{% block title %}OCR - Image to Text Converter{% endblock %}
+
+{% block content %}
+
+<div class="min-h-screen py-10 px-4 transition-colors duration-200">
+    <div class="max-w-6xl mx-auto">
+
+        <!-- MAIN CARD -->
+        <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden transition-colors duration-200">
+
+            <!-- HEADER -->
+            <div class="bg-gradient-to-r from-indigo-600 to-indigo-500 px-8 py-6">
+                <div class="flex items-center gap-4">
+                    <div class="bg-white/15 p-3 rounded-2xl">
+                        <i class="fas fa-eye text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-semibold text-white">
+                            OCR - Image to Text Converter
+                        </h2>
+                        <p class="text-emerald-100 text-sm mt-1">
+                            Extract text from images using Optical Character Recognition
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 md:p-10">
+
+                <form method="post" enctype="multipart/form-data" id="ocrForm" action="{{ url_for('ocr.index_post') }}">
+                    
+                    <!-- DROPZONE -->
+                    <div id="dropzone"
+                         class="relative border-2 border-dashed border-gray-300 rounded-2xl p-10 text-center bg-white hover:bg-gray-50 transition cursor-pointer">
+
+                        <input type="file"
+                               name="file"
+                               id="fileInput"
+                               accept="image/jpeg,image/png,image/jpg,image/webp,image/bmp,image/tiff"
+                               class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+
+                        <div class="pointer-events-none relative z-0">
+                            <div class="w-14 h-14 mx-auto bg-emerald-50 rounded-2xl flex items-center justify-center mb-4">
+                                <i class="fas fa-cloud-upload-alt text-emerald-600 text-2xl"></i>
+                            </div>
+                            <p class="text-gray-800 font-medium">Drag & drop an image here</p>
+                            <p class="text-sm text-gray-500">or click to select</p>
+                            <p class="text-xs text-gray-400 mt-2">JPG, PNG, WEBP, BMP, TIFF – Max 10MB</p>
+                        </div>
+                    </div>
+
+                    <!-- IMAGE PREVIEW -->
+                    <div id="previewContainer" class="hidden mt-6">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-semibold text-gray-700">Selected Image</h3>
+                            <button type="button" id="clearBtn" class="text-sm text-red-500 hover:text-red-700 flex items-center gap-1">
+                                <i class="fas fa-times"></i> Remove Image
+                            </button>
+                        </div>
+                        <div id="imagePreview" class="max-w-md mx-auto rounded-xl overflow-hidden border border-gray-200">
+                            <img id="previewImg" src="" alt="Preview" class="w-full h-auto">
+                        </div>
+                        <p class="text-xs text-gray-400 mt-2 flex items-center gap-1">
+                            <i class="fas fa-file-image"></i> <span id="fileName">No file selected</span>
+                        </p>
+                    </div>
+
+                    <!-- ACTION BUTTONS -->
+                    <div class="flex flex-wrap gap-3 justify-center mt-8">
+                        <button type="submit"
+                                id="ocrBtn"
+                                class="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i class="fas fa-robot mr-2"></i> Extract Text
+                        </button>
+                        
+                        <button type="button"
+                                id="clearAllBtn"
+                                class="px-8 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium shadow-sm transition">
+                            <i class="fas fa-trash mr-2"></i> Clear Everything
+                        </button>
+                    </div>
+                </form>
+
+                <!-- MESSAGE -->
+                {% if msg %}
+                <div id="messageContainer" class="mt-6 p-4 rounded-xl border text-sm 
+                    {% if 'error' in msg.lower() or 'invalid' in msg.lower() or 'too large' in msg.lower() or 'no text' in msg.lower() %}
+                        bg-red-50 border-red-200 text-red-800
+                    {% else %}
+                        bg-emerald-50 border-emerald-200 text-emerald-800
+                    {% endif %}
+                ">
+                    <div class="flex items-start gap-2">
+                        <i class="fas {% if 'error' in msg.lower() or 'invalid' in msg.lower() or 'too large' in msg.lower() or 'no text' in msg.lower() %}fa-exclamation-circle text-red-500{% else %}fa-check-circle text-emerald-500{% endif %} mt-0.5"></i>
+                        <span>{{ msg }}</span>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- EXTRACTED TEXT RESULT -->
+                {% if text and text.strip() %}
+                <div id="resultContainer" class="mt-8">
+                    <div class="flex items-center gap-3 mb-3 flex-wrap">
+                        <div class="bg-emerald-100 p-2 rounded-xl">
+                            <i class="fas fa-file-alt text-emerald-600"></i>
+                        </div>
+                        <h3 class="font-semibold text-gray-700">Extracted Text</h3>
+                        <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
+                            {{ text.split()|length }} words
+                        </span>
+                        <div class="ml-auto flex flex-wrap gap-2">
+                            <button onclick="copyText()" class="text-sm text-emerald-600 hover:text-emerald-700 flex items-center gap-1 border border-emerald-200 px-3 py-1 rounded-lg hover:bg-emerald-50 transition">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                            <button onclick="clearResult()" class="text-sm text-red-500 hover:text-red-700 flex items-center gap-1 border border-red-200 px-3 py-1 rounded-lg hover:bg-red-50 transition">
+                                <i class="fas fa-times"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 border border-gray-200 rounded-2xl p-4">
+                        <pre id="extractedText" class="whitespace-pre-wrap text-sm text-gray-800 font-mono leading-relaxed max-h-96 overflow-y-auto">{{ text }}</pre>
+                    </div>
+                    <div class="mt-4 flex flex-wrap gap-3">
+                        <button onclick="downloadText()" class="inline-flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition text-sm">
+                            <i class="fas fa-download"></i> Download as .txt
+                        </button>
+                        <button onclick="copyText()" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm">
+                            <i class="fas fa-copy"></i> Copy to Clipboard
+                        </button>
+                        <button onclick="clearResult()" class="inline-flex items-center gap-2 px-4 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition text-sm">
+                            <i class="fas fa-trash"></i> Clear Result
+                        </button>
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+
+        <!-- FEATURES SECTION -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white rounded-2xl border border-gray-100 p-5 text-center hover:shadow-md transition">
+                <div class="w-12 h-12 mx-auto bg-emerald-50 rounded-xl flex items-center justify-center mb-3">
+                    <i class="fas fa-language text-emerald-600 text-xl"></i>
+                </div>
+                <h4 class="font-medium text-gray-800 mb-1">Multi-language Support</h4>
+                <p class="text-sm text-gray-500">Supports English and multiple languages</p>
+            </div>
+            <div class="bg-white rounded-2xl border border-gray-100 p-5 text-center hover:shadow-md transition">
+                <div class="w-12 h-12 mx-auto bg-emerald-50 rounded-xl flex items-center justify-center mb-3">
+                    <i class="fas fa-print text-emerald-600 text-xl"></i>
+                </div>
+                <h4 class="font-medium text-gray-800 mb-1">Printed & Handwritten</h4>
+                <p class="text-sm text-gray-500">Works with both printed text and handwriting</p>
+            </div>
+            <div class="bg-white rounded-2xl border border-gray-100 p-5 text-center hover:shadow-md transition">
+                <div class="w-12 h-12 mx-auto bg-emerald-50 rounded-xl flex items-center justify-center mb-3">
+                    <i class="fas fa-bolt text-emerald-600 text-xl"></i>
+                </div>
+                <h4 class="font-medium text-gray-800 mb-1">Quick Processing</h4>
+                <p class="text-sm text-gray-500">Fast text extraction with high accuracy</p>
+            </div>
+        </div>
+
+        <!-- TIPS SECTION -->
+        <div class="mt-6 bg-blue-50 border border-blue-200 rounded-2xl p-4">
+            <div class="flex items-start gap-3">
+                <i class="fas fa-lightbulb text-blue-600 mt-1"></i>
+                <div>
+                    <h4 class="font-medium text-blue-800 text-sm">Tips for best results:</h4>
+                    <ul class="text-xs text-blue-700 mt-1 space-y-1">
+                        <li>• Use high-contrast images with clear text</li>
+                        <li>• Ensure the image is well-lit and in focus</li>
+                        <li>• Avoid images with complex backgrounds</li>
+                        <li>• For best results, use images with text size above 10pt</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    // ============================================
+    // STATE MANAGEMENT
+    // ============================================
+    let isDirty = false;
+    let formSubmitted = false;
+    let hasResult = {{ 'true' if text and text.strip() else 'false' }};
+    let isClearing = false;
+
+    // ============================================
+    // WARNING ON PAGE LEAVE (Fixed)
+    // ============================================
+window.addEventListener('load', function () {
+
+    const navEntries = performance.getEntriesByType("navigation");
+
+    if (navEntries.length > 0 && navEntries[0].type === "reload") {
+
+        Swal.fire({
+            title: 'Clear Data?',
+            text: 'You refreshed the page. Clear all OCR data?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes'
+        }).then((result) => {
+
+            if (result.isConfirmed) {
+                clearAll();
+            }
+
+        });
+
+    }
+
+});
+
+    // ============================================
+    // MARK DIRTY ON USER INTERACTION
+    // ============================================
+    document.addEventListener('DOMContentLoaded', function() {
+        // If there's a result, mark as dirty
+        if (hasResult) {
+            isDirty = true;
+        }
+        
+        // File input change
+        const fileInput = document.getElementById('fileInput');
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                isDirty = true;
+                hasResult = true;
+            }
+        });
+        
+        // Drag and drop
+        document.getElementById('dropzone').addEventListener('drop', function() {
+            isDirty = true;
+            hasResult = true;
+        });
+        
+        // Any text input or change
+        document.addEventListener('input', function() {
+            isDirty = true;
+        });
+    });
+
+    // ============================================
+    // SWEETALERT2 HELPERS
+    // ============================================
+    
+    function showSuccess(message) {
+        Swal.fire({
+            icon: 'success',
+            title: 'Success!',
+            text: message,
+            timer: 3000,
+            showConfirmButton: true,
+            confirmButtonColor: '#10b981'
+        });
+    }
+
+    function showError(message) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: message,
+            confirmButtonColor: '#ef4444'
+        });
+    }
+
+    function showConfirm(message, title = 'Are you sure?') {
+        return Swal.fire({
+            title: title,
+            text: message,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, clear everything!',
+            cancelButtonText: 'Cancel'
+        });
+    }
+
+    // ============================================
+    // CORE FUNCTIONALITY
+    // ============================================
+    
+    const fileInput = document.getElementById('fileInput');
+    const dropzone = document.getElementById('dropzone');
+    const previewContainer = document.getElementById('previewContainer');
+    const previewImg = document.getElementById('previewImg');
+    const fileName = document.getElementById('fileName');
+    const clearBtn = document.getElementById('clearBtn');
+    const clearAllBtn = document.getElementById('clearAllBtn');
+    const ocrBtn = document.getElementById('ocrBtn');
+
+    // Handle file selection
+    fileInput.addEventListener('change', function(e) {
+        const file = this.files[0];
+        if (file && file.type.startsWith('image/')) {
+            if (file.size > 10 * 1024 * 1024) {
+                showError('File is too large. Maximum size is 10MB.');
+                this.value = '';
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                previewContainer.classList.remove('hidden');
+                fileName.textContent = `${file.name} (${formatSize(file.size)})`;
+                ocrBtn.disabled = false;
+                isDirty = true;
+                hasResult = true;
+                formSubmitted = false;
+            }
+            reader.readAsDataURL(file);
+        } else if (file) {
+            showError('Please select a valid image file (JPG, PNG, WEBP, BMP, or TIFF)');
+            this.value = '';
+        }
+    });
+
+    // Drag and drop
+    dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('border-emerald-400', 'bg-emerald-50');
+    });
+    dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('border-emerald-400', 'bg-emerald-50');
+    });
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('border-emerald-400', 'bg-emerald-50');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            fileInput.dispatchEvent(new Event('change'));
+            isDirty = true;
+            hasResult = true;
+            formSubmitted = false;
+        }
+    });
+
+    // Clear image only
+    clearBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        clearImage();
+    });
+
+    // Clear everything with SweetAlert
+    clearAllBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        showConfirm('This will remove the image, extracted text, and all data from the server. This action cannot be undone!')
+            .then((result) => {
+                if (result.isConfirmed) {
+                    clearAll();
+                }
+            });
+    });
+
+    function clearImage() {
+        fileInput.value = '';
+        previewContainer.classList.add('hidden');
+        previewImg.src = '';
+        fileName.textContent = 'No file selected';
+        ocrBtn.disabled = true;
+        formSubmitted = false;
+        
+        // Check if there's still a result
+        const resultContainer = document.getElementById('resultContainer');
+        if (!resultContainer) {
+            isDirty = false;
+            hasResult = false;
+        }
+        
+        showSuccess('Image removed successfully!');
+    }
+
+    async function clearAll() {
+        try {
+            // Set clearing flag to prevent beforeunload warning
+            isClearing = true;
+            
+            Swal.fire({
+                title: 'Clearing...',
+                text: 'Please wait',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            const response = await fetch('{{ url_for("ocr.api_clear") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                // Reset all flags
+                isDirty = false;
+                hasResult = false;
+                formSubmitted = false;
+                isClearing = false;
+                
+                // Clear UI
+                fileInput.value = '';
+                previewContainer.classList.add('hidden');
+                previewImg.src = '';
+                fileName.textContent = 'No file selected';
+                ocrBtn.disabled = true;
+                
+                const resultContainer = document.getElementById('resultContainer');
+                if (resultContainer) {
+                    resultContainer.style.display = 'none';
+                }
+                
+                const messageContainer = document.getElementById('messageContainer');
+                if (messageContainer) {
+                    messageContainer.style.display = 'none';
+                }
+                
+                // Redirect to clean state with clear parameter
+                window.location.href = '{{ url_for("ocr.index_get") }}?clear=true';
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Cleared!',
+                    text: 'All data has been cleared successfully.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                isClearing = false;
+                showError('Failed to clear data. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error clearing:', error);
+            isClearing = false;
+            showError('Network error. Please try again.');
+        }
+    }
+
+    function clearResult() {
+        showConfirm('Clear the extracted text?', 'Clear Text?')
+            .then((result) => {
+                if (result.isConfirmed) {
+                    isClearing = true;
+                    
+                    const resultContainer = document.getElementById('resultContainer');
+                    if (resultContainer) {
+                        resultContainer.style.display = 'none';
+                    }
+                    
+                    // Check if there's still an image
+                    if (!fileInput.files || fileInput.files.length === 0) {
+                        isDirty = false;
+                        hasResult = false;
+                    } else {
+                        hasResult = false;
+                    }
+                    
+                    fetch('{{ url_for("ocr.api_clear_text") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    }).then(() => {
+                        isClearing = false;
+                        window.location.href = '{{ url_for("ocr.index_get") }}';
+                    }).catch(() => {
+                        isClearing = false;
+                    });
+                }
+            });
+    }
+
+    function formatSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+    // ============================================
+    // FORM SUBMISSION (Fixed)
+    // ============================================
+    document.getElementById('ocrForm').addEventListener('submit', function(e) {
+        if (formSubmitted) {
+            e.preventDefault();
+            return false;
+        }
+        
+        const fileInput = document.getElementById('fileInput');
+        if (!fileInput.files || fileInput.files.length === 0) {
+            e.preventDefault();
+            showError('Please select an image first.');
+            return false;
+        }
+        
+        // Set flags
+        formSubmitted = true;
+        isDirty = false; // Clear dirty flag since we're submitting
+        
+        const ocrBtn = document.getElementById('ocrBtn');
+        ocrBtn.disabled = true;
+        ocrBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Processing...';
+        ocrBtn.style.cursor = 'not-allowed';
+        
+        Swal.fire({
+            title: 'Processing...',
+            text: 'Extracting text from image',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+    });
+
+    // ============================================
+    // COPY & DOWNLOAD
+    // ============================================
+    
+    function copyText() {
+        const textElement = document.getElementById('extractedText');
+        if (textElement) {
+            const text = textElement.textContent;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Copied!',
+                        text: 'Text copied to clipboard',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                }).catch(() => {
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        }
+    }
+
+    function fallbackCopy(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            Swal.fire({
+                icon: 'success',
+                title: 'Copied!',
+                text: 'Text copied to clipboard',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        } catch (err) {
+            showError('Failed to copy text');
+        }
+        document.body.removeChild(textarea);
+    }
+
+    function downloadText() {
+        const textElement = document.getElementById('extractedText');
+        if (textElement) {
+            const text = textElement.textContent;
+            if (text.trim()) {
+                const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `extracted_text_${new Date().toISOString().slice(0,10)}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Downloaded!',
+                    text: 'Text file downloaded successfully',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            } else {
+                showError('No text to download');
+            }
+        }
+    }
+
+    // ============================================
+    // AUTO-DISMISS MESSAGES
+    // ============================================
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        const msgDiv = document.getElementById('messageContainer');
+        
+        if (msgDiv) {
+            setTimeout(() => {
+                msgDiv.style.transition = 'opacity 0.5s';
+                msgDiv.style.opacity = '0';
+                setTimeout(() => {
+                    msgDiv.style.display = 'none';
+                }, 500);
+            }, 8000);
+            
+            const isSuccess = !msgDiv.querySelector('.fa-exclamation-circle');
+            if (isSuccess && msgDiv.textContent.includes('successfully')) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Text Extracted!',
+                    text: msgDiv.textContent.trim(),
+                    timer: 3000,
+                    showConfirmButton: true,
+                    confirmButtonColor: '#10b981'
+                });
+            }
+        }
+        
+        const resultContainer = document.getElementById('resultContainer');
+        if (resultContainer) {
+            isDirty = true;
+            hasResult = true;
+        }
+    });
+
+    // ============================================
+    // KEYBOARD SHORTCUTS
+    // ============================================
+    
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.shiftKey && (e.key === 'C' || e.key === 'c')) {
+            e.preventDefault();
+            copyText();
+        }
+        if (e.key === 'Escape') {
+            const resultContainer = document.getElementById('resultContainer');
+            if (resultContainer && resultContainer.style.display !== 'none') {
+                clearResult();
+            }
+        }
+        if (e.ctrlKey && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+            e.preventDefault();
+            downloadText();
+        }
+        if (e.ctrlKey && e.shiftKey && e.key === 'Delete') {
+            e.preventDefault();
+            clearAllBtn.click();
+        }
+    });
+
+    // Initialize
+    ocrBtn.disabled = true;
+    
+    console.log('⌨️ Keyboard shortcuts:');
+    console.log('  Ctrl+Shift+C - Copy text');
+    console.log('  Ctrl+Shift+D - Download text');
+    console.log('  Ctrl+Shift+Delete - Clear everything');
+    console.log('  Escape - Clear result');
+</script>
+
+<style>
+    pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    pre::-webkit-scrollbar {
+        width: 6px;
+    }
+    pre::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    pre::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 3px;
+    }
+    pre::-webkit-scrollbar-thumb:hover {
+        background: #9ca3af;
+    }
+    #imagePreview img {
+        max-height: 400px;
+        object-fit: contain;
+    }
+    .transition {
+        transition: all 0.3s ease;
+    }
+    .swal2-popup {
+        border-radius: 20px !important;
+    }
+    .swal2-confirm {
+        border-radius: 12px !important;
+    }
+</style>
+
+{% endblock %}
